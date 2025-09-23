@@ -193,12 +193,12 @@ The experience gained through troubleshooting various integration challenges pro
 
 **Complete SOC Automation Workflow**
 
-![SOC Automation Workflow Diagram](soc_automation_workflow_complete.png)
+<img width="933" height="787" alt="diagram1" src="https://github.com/user-attachments/assets/429e1859-7277-4ce2-b152-aa6c606e30c5" />
 
 *The complete interconnected workflow showing all system components and their relationships: Windows 10 Client (Wazuh Agent) sends events through Router to Wazuh Manager, which triggers alerts to Shuffle SOAR platform. Shuffle orchestrates enrichment through VirusTotal, creates cases in TheHive, and sends email notifications to SOC analysts, with bidirectional response actions flowing back through the system.*
 
 **Linear Workflow Process**
 
-![Linear Workflow Process](soc_automation_workflow_linear.png)
+<img width="1302" height="402" alt="diagram2 report" src="https://github.com/user-attachments/assets/70603057-2689-4336-b1a2-83e1a61423f7" />
 
 *Simplified end-to-end automation pipeline: Windows 10 endpoint detection → Wazuh SIEM processing → Shuffle SOAR orchestration with OSINT enrichment → TheHive case management → Email notification to analysts.*
