@@ -29,11 +29,11 @@ The goal is to understand the current threat landscape and inform defensive stra
 
 | IP Address       | Attacks | Provider | Notes |
 |-----------------|--------|------------------|-------|
-| 208.109.190.200 | 778    | UCLOUD INFORMATION TECHNOLOGY | reputation, malware reports, or abuse score (placeholder) |
-| 200.105.196.189 | 583    | AXS Bolivia S.A. | reputation, malware reports, or abuse score (placeholder) |
-| 181.115.190.30  | 396    | Google Cloud Platform | reputation, malware reports, or abuse score (placeholder) |
-| 116.99.172.53   | 345    | GoDaddy.com, LLC | reputation, malware reports, or abuse score (placeholder) |
-| 196.251.87.127  | 264    | EMPRESA NACIONAL DE TELECOMUNICACIONES S.A. | reputation, malware reports, or abuse score (placeholder) |
+| 208.109.190.200 | 778    | UCLOUD INFORMATION TECHNOLOGY | reputation, malware reports, or abuse score  |
+| 200.105.196.189 | 583    | AXS Bolivia S.A. | reputation, malware reports, or abuse score  |
+| 181.115.190.30  | 396    | Google Cloud Platform | reputation, malware reports, or abuse score  |
+| 116.99.172.53   | 345    | GoDaddy.com, LLC | reputation, malware reports, or abuse score  |
+| 196.251.87.127  | 264    | EMPRESA NACIONAL DE TELECOMUNICACIONES S.A. | reputation, malware reports, or abuse score  |
 
 ### Top Attacking ASNs / Organizations
 
