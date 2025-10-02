@@ -1,0 +1,61 @@
+# Incident Report — Traffic Analysis Exercise (PCAP: 2025-01-22)  
+**Analyst:** Malachi Barratt  
+**Date:** October 2, 2025  
+
+---
+
+## Executive Summary
+This report summarizes the findings from the 2025-01-22 network traffic capture. The Windows host `10.1.17.215` (DESKTOP-L8C5GSJ / MAC `00:d0:b7:26:4a:74`, user `shutchenson`) downloaded a malicious file from a fake Google Authenticator website. After infection, the host communicated with several command-and-control (C2) servers.  
+
+During the initial review, one C2 IP (`45.125.66.32`) was missed. In this report, this host is included in the confirmed list of C2 endpoints.
+
+---
+
+## Victim Details
+- **IP address:** `10.1.17.215`  
+- **Hostname:** `DESKTOP-L8C5GSJ`  
+- **Windows user account:** `shutchenson`  
+- **MAC address:** `00:d0:b7:26:4a:74`  
+- **Domain / AD:** `BLUEMOONTUESDAY`  
+- **Domain Controller:** `10.1.17.2`
+
+---
+
+## Malicious Site
+- **Fake software site used for infection:** `authenticatoor.org` (fake Google Authenticator page)
+
+---
+
+## C2 IP Addresses (Post-Infection)
+- `5.252.153.241`  
+- `45.125.66.32`  ← *previously missed in initial review*  
+- `45.125.66.252`
+
+---
+
+## Observed Traffic
+- Initial HTTP requests to the fake Google Authenticator page, followed by payload downloads.  
+- Long-lived TCP connections (>600 seconds) to external IPs, indicating possible persistent C2 connections.  
+- HTTP GET requests to `/api/file/get-file/...` including PowerShell scripts (`.ps1`).  
+- TLS certificates with unusual common names, including `google-authenticator.burleson-appliance.net`.
+
+---
+
+## Why `45.125.66.32` Was Missed
+- **Filter limitations:** Scripts were focused on long-duration connections or exact URI matches. The missed IP may have had shorter connections or slightly different URI patterns.  
+- **Log selection:** Some connections appeared in logs not included in the summary.  
+- **Payload location:** The IP was possibly embedded in response data, not top-level HTTP host fields.  
+
+---
+
+## Recommended Next Steps
+1. **Isolate the infected host** from the network.  
+2. **Collect host artifacts** (memory, file system) for malware analysis.  
+3. **Block C2 IPs** at the firewall.  
+4. **Hunt for lateral movement** on the domain controller and internal servers.  
+5. **Share confirmed indicators** (IPs, domains, file hashes) with the SOC team or threat intelligence feeds.
+
+---
+
+## Summary
+The exercise confirmed that the host `10.1.17.215` was infected by a malicious file from a fake Google Authenticator site and communicated with three C2 servers. Including `45.125.66.32` provides a complete view of post-infection activity. This workflow provides a repeatable method for future traffic analysis investigations.
