@@ -31,107 +31,110 @@ The key objectives were:
 ---
 
 ## Infrastructure Overview  
-The pipeline was deployed in a **cloud-based environment** to allow scalable processing of large traffic captures. Using DigitalOcean’s Ubuntu 22.04 servers ensured a lightweight, easily reproducible setup. The environment consisted of 2 vCPU cores, 4GB RAM, and an 80GB SSD, which provided sufficient resources for running Zeek and Suricata simultaneously without performance bottlenecks.  
+The pipeline was deployed in a **cloud-based environment** to allow scalable processing of large traffic captures. DigitalOcean’s Ubuntu 22.04 droplet (2 vCPU, 4GB RAM, 80GB SSD) provided sufficient resources for running Zeek and Suricata simultaneously without performance bottlenecks.  
+
+The choice of DigitalOcean followed a temporary setback: Oracle Cloud ARM instances were unavailable due to capacity limits. This real-world obstacle reinforced the importance of **having backup cloud options** for uninterrupted project deployment.  
+
+Early configuration challenges included DNS resolution failures that blocked package installations. Systemd-resolved was initially configured only to localhost (127.0.0.53), preventing external name resolution. This was fixed by explicitly setting reliable public DNS servers (8.8.8.8, 1.1.1.1, 67.207.67.2) and adjusting firewall rules to allow outbound DNS traffic.  
 
 **Core tools included:**  
-- **Zeek**: Provides detailed, metadata-rich network logs across protocols like HTTP, DNS, and SSL.  
-- **Suricata**: Performs real-time intrusion detection using signature-based rules, outputting structured JSON alerts.  
-- **Bash scripting**: Automates log parsing, report generation, and IOC correlation, reducing the need for manual intervention.  
+- **Zeek**: Detailed, metadata-rich network logs across protocols like HTTP, DNS, and SSL; installed via the official repository with GPG verification.  
+- **Suricata**: Real-time intrusion detection using signature-based rules from the OISF PPA; requires regular signature updates.  
+- **Bash scripting**: Automates log parsing, report generation, and IOC correlation, reducing manual effort.  
 
-By combining these components, the infrastructure supports rapid triage, detailed forensic analysis, and IOC enrichment workflows.
+This combination supports rapid triage, detailed forensic analysis, and IOC enrichment workflows.
 
 ---
 
 ## Pipeline Architecture  
-The pipeline is structured to process traffic efficiently, with minimal analyst intervention. At a high level, the workflow consists of the following stages:  
+The pipeline is structured to process traffic efficiently, with minimal analyst intervention. The workflow consists of the following stages:  
 
 1. **Traffic Ingestion**  
-   Raw packets are captured live with `tcpdump` or replayed from stored PCAPs. All traffic is organized in a dedicated `/pcap/` directory for batch processing.  
+   Raw packets are captured live with `tcpdump` or replayed from stored PCAPs. Traffic is organized in a dedicated `/pcap/` directory for batch processing.  
 
 2. **Parallel Analysis**  
-   Zeek parses traffic to generate protocol-specific logs, allowing analysts to see detailed metadata for HTTP, DNS, SSL, and more. Suricata operates concurrently to detect threats using a tuned rule set.  
+   Zeek parses traffic into protocol-specific logs, while Suricata operates concurrently to detect threats with a tuned ruleset.  
 
 3. **Automated Extraction (Custom Scripts)**  
-   - **quick-report.sh**: Provides fast triage of suspicious activity.  
-   - **detailed-report.sh**: Generates comprehensive forensic reports.  
-   - **ip-look.sh**: Investigates a single IP in depth.  
-   - **ioc-cor.sh**: Correlates alerts and logs to extract IOCs.  
+   - **quick-report.sh**: Fast triage of suspicious activity.  
+   - **detailed-report.sh**: Comprehensive forensic reporting.  
+   - **ip-look.sh**: In-depth investigation of individual IPs.  
+   - **ioc-cor.sh**: Correlates alerts and logs to extract actionable IOCs.  
 
 4. **Output & Reporting**  
-   Reports consolidate alerts, network metadata, and IOCs. Analysts receive structured findings with timestamps, IPs, domains, and correlation points to streamline further investigation.
+   Reports consolidate alerts, network metadata, and IOCs. Analysts receive structured findings with timestamps, IPs, domains, and correlation points to streamline investigation.
 
-This architecture ensures both speed and depth of analysis, giving analysts actionable insights without overwhelming manual work.
+This architecture ensures both **speed and depth of analysis**, giving analysts actionable insights without overwhelming manual work.
 
 ---
 
 ## Automation Scripts  
 
 ### 1. `quick-report.sh` — Rapid Triage Report  
-The `quick-report.sh` script is designed for **immediate assessment** of captured traffic. It provides analysts with a condensed view of potential threats, helping prioritize which incidents require deeper investigation. The script processes connection logs, DNS queries, Suricata alerts, and file transfer logs to generate a high-level overview.  
+Provides **immediate assessment** of captured traffic. Processes connection logs, DNS queries, Suricata alerts, and file transfers to generate a high-level overview.  
 
 **Key outputs:**  
-- Top 10 destination IPs.  
-- Top 5 network protocols.  
-- Top 10 Suricata alerts.  
-- Suspicious domains with high entropy.  
-- Recent file transfers with MIME type & filename.  
+- Top 10 destination IPs  
+- Top 5 network protocols  
+- Top 10 Suricata alerts  
+- Suspicious high-entropy domains  
+- Recent file transfers with MIME type & filename  
 
 ---
 
 ### 2. `detailed-report.sh` — Comprehensive Forensic Report  
-`detailed-report.sh` generates a **multi-section forensic report** suitable for in-depth analysis. It extracts unusual connection patterns, authentication failures, file activity, and TLS/SSL metadata, allowing analysts to detect potential C2 communication or data exfiltration attempts. By structuring the findings, the script ensures that investigations are consistent and repeatable.  
+Generates a **multi-section forensic report** for in-depth analysis. Extracts unusual connection patterns, authentication failures, file activity, and TLS/SSL metadata.  
 
 **Key outputs:**  
-- Non-standard port and long-lived connections.  
-- SSH and HTTP authentication failures.  
-- Executables, scripts, and archive file transfers.  
-- TLS/SSL subject common names and unusual certificates.  
+- Non-standard port and long-lived connections  
+- SSH and HTTP authentication failures  
+- Executables, scripts, and archive file transfers  
+- TLS/SSL subject common names and unusual certificates  
 
 ---
 
 ### 3. `ip-look.sh` — Targeted IP Investigation  
-The `ip-look.sh` script focuses on **specific IP addresses**, enabling analysts to pivot from known IOCs to explore related network activity. Analysts are prompted for an IP, after which the script collates DHCP, Kerberos, HTTP, DNS, and file transfer logs, providing contextual insight into user and host behavior.  
+Focuses on **specific IP addresses**, enabling analysts to pivot from known IOCs to related network activity. Collects DHCP, Kerberos, HTTP, DNS, and file transfer logs.  
 
 **Key outputs:**  
-- MAC address and DHCP associations.  
-- Kerberos authentication records.  
-- Top 10 connections from the IP.  
-- HTTP requests, including URIs and user agents.  
-- File transfers and DNS queries associated with the IP.  
+- MAC address and DHCP associations  
+- Kerberos authentication records  
+- Top 10 connections from the IP  
+- HTTP requests, including URIs and user agents  
+- File transfers and DNS queries associated with the IP  
 
 ---
 
 ### 4. `ioc-cor.sh` — IOC Extraction & Correlation  
-The `ioc-cor.sh` script **bridges Zeek and Suricata** data, correlating alerts with network metadata. It identifies suspicious IPs, domains, unusual HTTP user agents, large uploads, and potentially malicious files, providing a single source of truth for threat indicators. By cross-referencing Suricata alerts with Zeek logs, analysts can validate IOCs and prioritize response.  
+**Correlates Zeek and Suricata data**, identifying suspicious IPs, domains, unusual HTTP user agents, large uploads, and potentially malicious files.  
 
 **Key outputs:**  
-- Top 20 IPs by connection count.  
-- High-entropy domains.  
-- Unusual HTTP user agents.  
-- Large HTTP uploads.  
-- Suspicious file hashes (SHA1).  
-- Correlated Suricata alerts with Zeek connection data.  
+- Top 20 IPs by connection count  
+- High-entropy domains  
+- Unusual HTTP user agents  
+- Large HTTP uploads  
+- Suspicious file hashes (SHA1)  
+- Correlated Suricata alerts with Zeek connection data  
 
 ---
 
 ## Workflow in Action  
-The operational workflow is designed for efficiency:  
+Operational workflow:  
 
 1. **Quick Triage** → Run `quick-report.sh` to highlight IPs, domains, and alerts.  
 2. **Deep-Dive Analysis** → Run `detailed-report.sh` for a structured forensic breakdown.  
 3. **IP Enrichment** → Run `ip-look.sh` for IOC-specific insights.  
 4. **IOC Correlation** → Run `ioc-cor.sh` to merge Suricata alerts with Zeek metadata.  
 
-This workflow enables analysts to move seamlessly from high-level awareness to detailed, IOC-focused investigation.
+This enables analysts to move seamlessly from high-level awareness to detailed, IOC-focused investigation.
 
 ---
 
 ## Benefits and Impact  
-The automated pipeline offers several tangible benefits:  
-
+The automated pipeline provides:  
 - **Time Efficiency**: Multi-step log parsing reduced to single-command execution.  
 - **Consistency**: Automated correlation ensures standardized reporting.  
-- **IOC Extraction**: Generates actionable IP/domain/file hash lists.  
+- **IOC Extraction**: Actionable IP/domain/file hash lists.  
 - **Scalability**: Cloud-hosted environment can process multiple PCAPs in parallel.  
 
 By combining automation with robust tooling, the pipeline reduces analyst workload while improving investigative accuracy.
@@ -139,21 +142,23 @@ By combining automation with robust tooling, the pipeline reduces analyst worklo
 ---
 
 ## Challenges and Fixes  
-Several challenges were addressed during implementation:  
+Implementation challenges included:  
 
 - **Noisy Suricata logs** → Filtered with `jq` in `ioc-cor.sh`.  
 - **Distributed Zeek logs** → Consolidated using `zeek-cut` pipelines.  
 - **High CPU spikes** → Mitigated by tuning Suricata threading and limiting concurrent captures.  
+- **DNS and firewall issues** → Fixed systemd-resolved configuration and allowed the proper DNS IPs (67.207.67.2) through the firewall.  
+- **Empty script outputs** → Corrected IP typos in input variables for accurate log correlation.  
 
-These solutions enhanced both performance and reliability of the pipeline.
+These adjustments improved performance, reliability, and accuracy of the pipeline.
 
 ---
 
 ## Future Enhancements  
 Planned improvements include:  
-- Adding **Elasticsearch + Kibana** for visualization of traffic and alerts.  
+- Integrating **Elasticsearch + Kibana** for traffic and alert visualization.  
 - Converting Bash scripts into a **modular Python framework** for maintainability.  
-- Integrating with **MISP** for automated threat intelligence sharing.  
+- Integration with **MISP** for automated threat intelligence sharing.  
 - Incorporating **YARA and file carving** for extracting malware payloads.  
 
 These enhancements aim to make the pipeline more scalable, maintainable, and intelligent.
@@ -161,10 +166,10 @@ These enhancements aim to make the pipeline more scalable, maintainable, and int
 ---
 
 ## Conclusion  
-This automated network forensics pipeline demonstrates how open-source tools and scripting can transform manual investigations into a **streamlined, semi-automated process**. By leveraging Zeek and Suricata alongside custom automation, analysts can quickly triage, deeply investigate, and correlate network threats with high accuracy.  
+This automated network forensics pipeline demonstrates how open-source tools and scripting can transform manual investigations into a **streamlined, semi-automated process**. Analysts can quickly triage, deeply investigate, and correlate network threats with high accuracy.  
 
 **Skills demonstrated:**  
-- Cloud-based infrastructure design.  
-- Forensic automation with Bash.  
-- Multi-tool log correlation.  
-- Threat detection and IOC reporting.  
+- Cloud-based infrastructure design  
+- Forensic automation with Bash  
+- Multi-tool log correlation  
+- Threat detection and IOC reporting  
