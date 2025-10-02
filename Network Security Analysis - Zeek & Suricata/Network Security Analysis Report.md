@@ -87,7 +87,7 @@ Generates a **multi-section forensic report** for in-depth analysis. Extracts un
 
 **Key outputs:**  
 - Non-standard port and long-lived connections  
-- SSH and HTTP authentication failures  
+- Various authentication failures  
 - Executables, scripts, and archive file transfers  
 - TLS/SSL subject common names and unusual certificates  
 
@@ -173,3 +173,4 @@ This automated network forensics pipeline demonstrates how open-source tools and
 - Forensic automation with Bash  
 - Multi-tool log correlation  
 - Threat detection and IOC reporting  
+
